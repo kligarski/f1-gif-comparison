@@ -29,6 +29,12 @@ driver2_lap = session.laps.pick_driver(driver2).pick_fastest()
 driver1_telemetry = driver1_lap.get_telemetry(frequency=20)
 driver2_telemetry = driver2_lap.get_telemetry(frequency=20)
 
+driver1_telemetry.X = driver1_telemetry.X.map(lambda x: int(x)) 
+driver1_telemetry.Y = driver1_telemetry.Y.map(lambda x: int(x)) 
+
+driver2_telemetry.X = driver2_telemetry.X.map(lambda x: int(x)) 
+driver2_telemetry.Y = driver2_telemetry.Y.map(lambda x: int(x)) 
+
 with open("driver1_telemetry.json", "w") as file:
     driver1_telemetry[['X', 'Y']].rename(columns={"X": "x", "Y": "y"}).to_json(file, orient="records")
 

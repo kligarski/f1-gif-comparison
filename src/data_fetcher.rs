@@ -8,14 +8,16 @@ pub struct DriverPosition {
     pub y: i32
 }
 
-pub fn fetch(year: u32, country: &str, driver1: &str, driver2: &str) -> (Vec<DriverPosition>, Vec<DriverPosition>) {
-    // Command::new("python")
-    //     .arg("./f1_fast/fetch.py")
-    //     .arg(year.to_string())
-    //     .arg(country)
-    //     .arg(driver1)
-    //     .arg(driver2)
-    //     .status().expect("Unable to fetch data.");
+pub fn fetch(year: u32, country: &str, driver1: &str, driver2: &str, use_cached: bool) -> (Vec<DriverPosition>, Vec<DriverPosition>) {
+    if !use_cached {
+        Command::new("python")
+            .arg("./f1_fast/fetch.py")
+            .arg(year.to_string())
+            .arg(country)
+            .arg(driver1)
+            .arg(driver2)
+            .status().expect("Unable to fetch data.");
+    }
     
     let d1_json = fs::read_to_string("driver1_telemetry.json")
         .expect("Unable to read json file.");
