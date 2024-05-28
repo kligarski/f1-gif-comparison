@@ -1,7 +1,7 @@
 use std::cmp::{min, max};
 use std::fs;
 
-use image::{codecs::gif::GifEncoder, Delay, Frame, Rgba, RgbaImage};
+use image::{codecs::gif::GifEncoder, Delay, Frame, Rgba, RgbaImage, imageops::overlay};
 use imageproc::{drawing::draw_antialiased_line_segment_mut, pixelops::interpolate};
 
 use crate::data_fetcher::DriverPosition;
@@ -94,8 +94,8 @@ pub fn generate_gif(mut d1: Vec<DriverPosition>, mut d2: Vec<DriverPosition>, tr
     let writer = std::io::BufWriter::new(output_gif);
     let mut encoder = GifEncoder::new_with_speed(writer, 30);
 
-    let mut d1_buf = RgbaImage::from_pixel(track_width, track_height, Rgba([255, 255, 255, 255]));
-    let mut d2_buf = RgbaImage::from_pixel(track_width, track_height, Rgba([255, 255, 255, 255]));
+    let mut d1_buf = RgbaImage::from_pixel(track_width, track_height, Rgba([255, 255, 255, 0]));
+    let mut d2_buf = RgbaImage::from_pixel(track_width, track_height, Rgba([255, 255, 255, 0]));
 
     
 
@@ -104,10 +104,20 @@ pub fn generate_gif(mut d1: Vec<DriverPosition>, mut d2: Vec<DriverPosition>, tr
         if i + 1 < d1.len() {
             let p1 = (d1[i].y, d1[i].x);
             let p2 = (d1[i + 1].y, d1[i + 1].x);
-            draw_antialiased_line_segment_mut(&mut d1_buf, p1, p2, Rgba([0, 0, 255, 255]), interpolate);
+            draw_antialiased_line_segment_mut(&mut d1_buf, p1, p2, Rgba([0, 0, 255, 127]), interpolate);
         }
+
+        if i + 1 < d2.len() {
+            let p1 = (d2[i].y, d2[i].x);
+            let p2 = (d2[i + 1].y, d2[i + 1].x);
+            draw_antialiased_line_segment_mut(&mut d2_buf, p1, p2, Rgba([255, 0, 0, 127]), interpolate);
+        }
+
+        let mut combined_img = RgbaImage::from_pixel(track_width, track_height, Rgba([255, 255, 255, 255]));
+        overlay(&mut combined_img, &d1_buf, 0, 0);
+        overlay(&mut combined_img, &d2_buf, 1, 1);
         
-        let frame = Frame::from_parts(d1_buf.clone(), 0, 0, 
+        let frame = Frame::from_parts(combined_img, 0, 0, 
             Delay::from_numer_denom_ms(50, 1));
 
         encoder.encode_frame(frame).expect("Can't encode frame");
