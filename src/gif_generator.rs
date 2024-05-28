@@ -1,8 +1,9 @@
 use std::cmp::{min, max};
 use std::fs;
 
+use image::ImageBuffer;
 use image::{codecs::gif::GifEncoder, Delay, Frame, Rgba, RgbaImage, imageops::overlay};
-use imageproc::{drawing::draw_antialiased_line_segment_mut, pixelops::interpolate};
+use imageproc::{drawing::draw_antialiased_line_segment_mut, pixelops::interpolate, drawing::BresenhamLineIter, drawing::draw_filled_circle_mut};
 
 use crate::data_fetcher::DriverPosition;
 
@@ -86,6 +87,23 @@ fn transform_data(d1: &mut Vec<DriverPosition>, d2: &mut Vec<DriverPosition>, wi
     }
 }
 
+// Adapted from imageproc::drawing::draw_line_segment_mut
+fn draw_thick_line_segment_mut(image: &mut RgbaImage, start: (f32, f32), end: (f32, f32), color: Rgba<u8>, radius: i32)
+{
+    let line_iterator = BresenhamLineIter::new(start, end);
+    for point in line_iterator {
+        draw_filled_circle_mut(image, point, radius, color);
+    }
+}
+
+fn draw_thick_line_mut(image: &mut RgbaImage, start: (i32, i32), end: (i32, i32), color: Rgba<u8>, thickness: i32) {
+    let radius = (thickness + 1) / 2;
+
+    let start_f32 = (start.0 as f32, start.1 as f32);
+    let end_f32 = (end.0 as f32, end.1 as f32);
+
+    draw_thick_line_segment_mut(image, start_f32, end_f32, color, radius);
+}
 
 pub fn generate_gif(mut d1: Vec<DriverPosition>, mut d2: Vec<DriverPosition>, track_width: u32, track_height: u32) {
     transform_data(&mut d1, &mut d2, track_width, track_height);
@@ -97,25 +115,23 @@ pub fn generate_gif(mut d1: Vec<DriverPosition>, mut d2: Vec<DriverPosition>, tr
     let mut d1_buf = RgbaImage::from_pixel(track_width, track_height, Rgba([255, 255, 255, 0]));
     let mut d2_buf = RgbaImage::from_pixel(track_width, track_height, Rgba([255, 255, 255, 0]));
 
-    
-
     for i in 0..max(d1.len(), d2.len())-1 {
         println!("Frame {} / {}", i, max(d1.len(), d2.len())-2);
         if i + 1 < d1.len() {
             let p1 = (d1[i].y, d1[i].x);
             let p2 = (d1[i + 1].y, d1[i + 1].x);
-            draw_antialiased_line_segment_mut(&mut d1_buf, p1, p2, Rgba([0, 0, 255, 127]), interpolate);
+            draw_thick_line_mut(&mut d1_buf, p1, p2, Rgba([0, 0, 255, 127]), 3);
         }
 
         if i + 1 < d2.len() {
             let p1 = (d2[i].y, d2[i].x);
             let p2 = (d2[i + 1].y, d2[i + 1].x);
-            draw_antialiased_line_segment_mut(&mut d2_buf, p1, p2, Rgba([255, 0, 0, 127]), interpolate);
+            draw_thick_line_mut(&mut d2_buf, p1, p2, Rgba([255, 0, 0, 127]), 3);
         }
 
         let mut combined_img = RgbaImage::from_pixel(track_width, track_height, Rgba([255, 255, 255, 255]));
         overlay(&mut combined_img, &d1_buf, 0, 0);
-        overlay(&mut combined_img, &d2_buf, 1, 1);
+        overlay(&mut combined_img, &d2_buf, 0, 0);
         
         let frame = Frame::from_parts(combined_img, 0, 0, 
             Delay::from_numer_denom_ms(50, 1));
