@@ -1,7 +1,7 @@
 use std::cmp::{min, max};
-use crate::data_fetcher::DriverPosition;
+use crate::data_fetcher::DriverTelemetryData;
 
-pub fn find_extrema(d1: &Vec<DriverPosition>, d2: &Vec<DriverPosition>) -> ((i32, i32), (i32, i32)) {
+pub fn find_extrema(d1: &Vec<DriverTelemetryData>, d2: &Vec<DriverTelemetryData>) -> ((i32, i32), (i32, i32)) {
     let min_x_d1 = d1.iter().map(|s| s.x).min().expect("Invalid data");
     let min_x_d2 = d2.iter().map(|s| s.x).min().expect("Invalid data");
 
@@ -20,7 +20,7 @@ pub fn find_extrema(d1: &Vec<DriverPosition>, d2: &Vec<DriverPosition>) -> ((i32
     (x_range, y_range)    
 }
 
-pub fn resize_data_to_dims(d1: &mut Vec<DriverPosition>, d2: &mut Vec<DriverPosition>, width: u32, height: u32) {
+pub fn resize_data_to_dims(d1: &mut Vec<DriverTelemetryData>, d2: &mut Vec<DriverTelemetryData>, width: u32, height: u32) {
     let (mut range_x, mut range_y) = find_extrema(&d1, &d2);
 
     if range_x.0 < 0 {
@@ -68,7 +68,7 @@ pub fn resize_data_to_dims(d1: &mut Vec<DriverPosition>, d2: &mut Vec<DriverPosi
     }
 }
 
-pub fn center_data_to_dims(d1: &mut Vec<DriverPosition>, d2: &mut Vec<DriverPosition>, width: u32, height: u32) {
+pub fn center_data_to_dims(d1: &mut Vec<DriverTelemetryData>, d2: &mut Vec<DriverTelemetryData>, width: u32, height: u32) {
     let (range_x, range_y) = find_extrema(d1, d2);
 
     let x_size = range_x.1 - range_x.0;

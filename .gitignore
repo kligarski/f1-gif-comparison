@@ -3,3 +3,9 @@ animation.gif
 .vscode
 driver1_telemetry.json
 driver2_telemetry.json
+driver1_data.json
+driver2_data.json
+lap1_data.json
+lap2_data.json
+telemetry1_data.json
+telemetry2_data.json

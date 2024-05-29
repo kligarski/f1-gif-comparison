@@ -5,7 +5,7 @@ use std::cmp::max;
 use std::fs;
 use std::io::Write;
 use image::{codecs::gif::GifEncoder, Delay, Frame, Rgba, RgbaImage, imageops::overlay};
-use crate::data_fetcher::DriverPosition;
+use crate::data_fetcher::{CompleteDriverData, DriverTelemetryData};
 use image_resize::*;
 use drawing_utils::*;
 
@@ -20,17 +20,17 @@ const DRIVER1_COLOR: Rgba<u8> = Rgba([127, 127, 255, 127]);
 const DRIVER2_COLOR: Rgba<u8> = Rgba([255, 127, 127, 127]);
 const TRANSPARENT: Rgba<u8> = Rgba([255, 255, 255, 0]);
 
-fn can_create_frame(driver_data: &Vec<DriverPosition>, current_frame: usize) -> bool {
+fn can_create_frame(driver_data: &Vec<DriverTelemetryData>, current_frame: usize) -> bool {
     current_frame + 1 < driver_data.len()
 }
 
-fn draw_frame(image_buffer: &mut RgbaImage, driver_data: &Vec<DriverPosition>, current_frame: usize, color: Rgba<u8>, thickness: i32) {
+fn draw_frame(image_buffer: &mut RgbaImage, driver_data: &Vec<DriverTelemetryData>, current_frame: usize, color: Rgba<u8>, thickness: i32) {
     let p1 = (driver_data[current_frame].y, driver_data[current_frame].x);
     let p2 = (driver_data[current_frame + 1].y, driver_data[current_frame + 1].x);
     draw_thick_line_mut(image_buffer, p1, p2, color, thickness);
 }
 
-fn draw_driver_frames(d1_buffer: &mut RgbaImage, d2_buffer: &mut RgbaImage, d1: &Vec<DriverPosition>, d2: &Vec<DriverPosition>, current_frame: usize) {
+fn draw_driver_frames(d1_buffer: &mut RgbaImage, d2_buffer: &mut RgbaImage, d1: &Vec<DriverTelemetryData>, d2: &Vec<DriverTelemetryData>, current_frame: usize) {
     if can_create_frame(&d1, current_frame) {
         draw_frame(d1_buffer, &d1, current_frame, DRIVER1_COLOR, THICKNESS);
     }
@@ -55,7 +55,10 @@ where
     encoder.encode_frame(frame).expect("Can't encode frame");
 }
 
-pub fn generate_gif(mut d1: Vec<DriverPosition>, mut d2: Vec<DriverPosition>, track_width: u32, track_height: u32, output_path: &str) {
+pub fn generate_gif(mut complete_d1_data: CompleteDriverData, mut complete_d2_data: CompleteDriverData, track_width: u32, track_height: u32, output_path: &str) {  
+    let mut d1 = &mut complete_d1_data.telemetry;
+    let mut d2 = &mut complete_d2_data.telemetry;
+    
     let output_gif = fs::File::create(output_path).expect("Unable to create file");
     let writer = std::io::BufWriter::new(output_gif);
     let mut encoder = GifEncoder::new_with_speed(writer, 30);

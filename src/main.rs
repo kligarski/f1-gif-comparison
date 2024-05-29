@@ -5,6 +5,9 @@ mod data_fetcher;
 mod gif_generator;
 
 fn main() {
-    let (d1, d2) = fetch(2023, "Hungary", "HAM", "RUS", true);
-    generate_gif(d1, d2, 512, 512, "animation.gif");
+    match fetch(2023, "Hungary", "HAM", "RUS", true) {
+        Ok((d1, d2)) 
+            => generate_gif(d1, d2, 512, 512, "animation.gif"),
+        Err(e) => println!("Unable to create a gif. Error: {}", e)
+    }
 }
