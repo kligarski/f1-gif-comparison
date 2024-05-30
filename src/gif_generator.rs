@@ -16,8 +16,6 @@ const FRAME_TIME: u32 = 50;
 const SIDEBAR_WIDTH: u32 = 256;
 
 const BACKGROUND_COLOR: Rgba<u8> = Rgba([15, 15, 15, 255]);
-const DRIVER1_COLOR: Rgba<u8> = Rgba([127, 127, 255, 127]);
-const DRIVER2_COLOR: Rgba<u8> = Rgba([255, 127, 127, 127]);
 const TRANSPARENT: Rgba<u8> = Rgba([255, 255, 255, 0]);
 
 fn can_create_frame(driver_data: &Vec<DriverTelemetryData>, current_frame: usize) -> bool {
@@ -30,13 +28,13 @@ fn draw_frame(image_buffer: &mut RgbaImage, driver_data: &Vec<DriverTelemetryDat
     draw_thick_line_mut(image_buffer, p1, p2, color, thickness);
 }
 
-fn draw_driver_frames(d1_buffer: &mut RgbaImage, d2_buffer: &mut RgbaImage, d1: &Vec<DriverTelemetryData>, d2: &Vec<DriverTelemetryData>, current_frame: usize) {
+fn draw_driver_frames(d1_buffer: &mut RgbaImage, d2_buffer: &mut RgbaImage, d1: &Vec<DriverTelemetryData>, d2: &Vec<DriverTelemetryData>, d1_color: Rgba<u8>, d2_color: Rgba<u8>, current_frame: usize) {
     if can_create_frame(&d1, current_frame) {
-        draw_frame(d1_buffer, &d1, current_frame, DRIVER1_COLOR, THICKNESS);
+        draw_frame(d1_buffer, &d1, current_frame, d1_color, THICKNESS);
     }
 
     if can_create_frame(&d2, current_frame) {
-        draw_frame(d2_buffer, &d2, current_frame, DRIVER2_COLOR, THICKNESS);
+        draw_frame(d2_buffer, &d2, current_frame, d2_color, THICKNESS);
     }
 }
 
@@ -56,9 +54,11 @@ where
 }
 
 pub fn generate_gif(mut complete_d1_data: CompleteDriverData, mut complete_d2_data: CompleteDriverData, track_width: u32, track_height: u32, output_path: &str) {  
+    let (d1_color, d2_color) = get_driver_colors(&complete_d1_data.driver, &complete_d2_data.driver);
+    
     let mut d1 = &mut complete_d1_data.telemetry;
     let mut d2 = &mut complete_d2_data.telemetry;
-    
+
     let output_gif = fs::File::create(output_path).expect("Unable to create file");
     let writer = std::io::BufWriter::new(output_gif);
     let mut encoder = GifEncoder::new_with_speed(writer, 30);
@@ -73,7 +73,7 @@ pub fn generate_gif(mut complete_d1_data: CompleteDriverData, mut complete_d2_da
     for i in 0..no_frames {
         println!("Frame {} / {}", i, no_frames - 1);
 
-        draw_driver_frames(&mut d1_buffer, &mut d2_buffer, &d1, &d2, i);
+        draw_driver_frames(&mut d1_buffer, &mut d2_buffer, &d1, &d2, d1_color, d2_color, i);
 
         let mut combined_img = RgbaImage::from_pixel(track_width + SIDEBAR_WIDTH, track_height, BACKGROUND_COLOR);
         overlay_driver_frames(&mut combined_img, &d1_buffer, &d2_buffer);
