@@ -265,6 +265,7 @@ dependencies = [
 name = "f1_gif_comparison"
 version = "0.1.0"
 dependencies = [
+ "ab_glyph",
  "image",
  "imageproc",
  "serde",

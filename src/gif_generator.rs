@@ -1,18 +1,24 @@
 mod image_resize;
 mod drawing_utils;
+mod hud_overlay;
 
 use std::cmp::max;
 use std::fs;
 use std::io::Write;
-use image::{codecs::gif::GifEncoder, Delay, Frame, Rgba, RgbaImage, imageops::overlay};
+use ab_glyph::FontRef;
+use image::{codecs::gif::GifEncoder, imageops::overlay, Delay, Frame, Rgba, RgbaImage};
 use crate::data_fetcher::{CompleteDriverData, DriverTelemetryData};
 use image_resize::*;
 use drawing_utils::*;
+use hud_overlay::*;
 
 
 const THICKNESS: i32 = 3;
 const PADDING: u32 = THICKNESS as u32 * 5;
 const FRAME_TIME: u32 = 50;
+
+const TRACK_WIDTH: u32 = 512;
+const TRACK_HEIGHT: u32 = 512;
 const SIDEBAR_WIDTH: u32 = 256;
 
 const BACKGROUND_COLOR: Rgba<u8> = Rgba([15, 15, 15, 255]);
@@ -53,30 +59,33 @@ where
     encoder.encode_frame(frame).expect("Can't encode frame");
 }
 
-pub fn generate_gif(mut complete_d1_data: CompleteDriverData, mut complete_d2_data: CompleteDriverData, track_width: u32, track_height: u32, output_path: &str) {  
-    let (d1_color, d2_color) = get_driver_colors(&complete_d1_data.driver, &complete_d2_data.driver);
-    
-    let mut d1 = &mut complete_d1_data.telemetry;
-    let mut d2 = &mut complete_d2_data.telemetry;
+pub fn generate_gif(mut complete_d1_data: CompleteDriverData, mut complete_d2_data: CompleteDriverData, output_path: &str) {  
+    let (d1_draw_color, d2_draw_color) = get_driver_colors(&complete_d1_data.driver, &mut complete_d2_data.driver);
 
     let output_gif = fs::File::create(output_path).expect("Unable to create file");
     let writer = std::io::BufWriter::new(output_gif);
     let mut encoder = GifEncoder::new_with_speed(writer, 30);
 
-    let mut d1_buffer = RgbaImage::from_pixel(track_width, track_height, TRANSPARENT);
-    let mut d2_buffer = RgbaImage::from_pixel(track_width, track_height, TRANSPARENT);
+    let mut d1_buffer = RgbaImage::from_pixel(TRACK_WIDTH, TRACK_HEIGHT, TRANSPARENT);
+    let mut d2_buffer = RgbaImage::from_pixel(TRACK_WIDTH, TRACK_HEIGHT, TRANSPARENT);
 
-    resize_data_to_dims(&mut d1, &mut d2, track_width - 2 * PADDING, track_height - 2 * PADDING);
-    center_data_to_dims(&mut d1, &mut d2, track_width, track_height);
+    let regular_font = FontRef::try_from_slice(include_bytes!("../static/fonts/OpenSans-Regular.ttf")).expect("Unable to load font");
+    let bold_font = FontRef::try_from_slice(include_bytes!("../static/fonts/OpenSans-Bold.ttf")).expect("Unable to load font");
 
-    let no_frames = max(d1.len(), d2.len()) - 1;
+    resize_data_to_dims(&mut complete_d1_data.telemetry, &mut complete_d2_data.telemetry, TRACK_WIDTH - 2 * PADDING, TRACK_HEIGHT - 2 * PADDING);
+    center_data_to_dims(&mut complete_d1_data.telemetry, &mut complete_d2_data.telemetry, TRACK_WIDTH, TRACK_HEIGHT);
+
+    let no_frames = max(complete_d1_data.telemetry.len(), complete_d2_data.telemetry.len()) + 20;
     for i in 0..no_frames {
         println!("Frame {} / {}", i, no_frames - 1);
 
-        draw_driver_frames(&mut d1_buffer, &mut d2_buffer, &d1, &d2, d1_color, d2_color, i);
+        draw_driver_frames(&mut d1_buffer, &mut d2_buffer, &complete_d1_data.telemetry, &complete_d2_data.telemetry, d1_draw_color, d2_draw_color, i);
 
-        let mut combined_img = RgbaImage::from_pixel(track_width + SIDEBAR_WIDTH, track_height, BACKGROUND_COLOR);
+        let hud = get_hud(&complete_d1_data, &complete_d2_data, i, &regular_font, &bold_font);
+
+        let mut combined_img = RgbaImage::from_pixel(TRACK_WIDTH + SIDEBAR_WIDTH, TRACK_HEIGHT, BACKGROUND_COLOR);
         overlay_driver_frames(&mut combined_img, &d1_buffer, &d2_buffer);
+        overlay(&mut combined_img, &hud, TRACK_WIDTH as i64, 0);
         
         save_frame_to_gif(&mut encoder, combined_img);
     }

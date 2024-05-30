@@ -42,7 +42,7 @@ fn get_complementary_color(color: [u8; 4]) -> [u8; 4] {
 }
 
 // reversed alpha-blending to preserve driver colors with transparency
-fn compute_foreground_rgba(result: [u8; 3], background: [u8; 3]) -> Result<[u8; 4], String> {
+pub fn compute_foreground_rgba(result: [u8; 3], background: [u8; 3]) -> Result<[u8; 4], String> {
     let (r_r, g_r, b_r) = (result[0] as f32, result[1] as f32, result[2] as f32);
     let (r_b, g_b, b_b) = (background[0] as f32, background[1] as f32, background[2] as f32);
 
@@ -74,13 +74,15 @@ fn compute_foreground_rgba(result: [u8; 3], background: [u8; 3]) -> Result<[u8; 
 }
 
 // Returns driver colors coresponding to team's colors in Rgba<u8>
-// If both drivers are from the same team, the second driver is assigned a complementary color
-pub fn get_driver_colors(driver1: &DriverData, driver2: &DriverData) -> (Rgba<u8>, Rgba<u8>) {
+// If both drivers are from the same team, the second driver is assigned 
+// a complementary color and also changes it in the DriverData struct
+pub fn get_driver_colors(driver1: &DriverData, driver2: &mut DriverData) -> (Rgba<u8>, Rgba<u8>) {
     let d1_color = driver1.team_color.clone();
     let mut d2_color = driver2.team_color.clone();
 
     if d1_color == d2_color {
         d2_color = get_complementary_color(d2_color);
+        driver2.team_color = d2_color.clone();
     }
 
     let d1_3 = [d1_color[0], d1_color[1], d1_color[2]];
