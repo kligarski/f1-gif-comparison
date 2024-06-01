@@ -1,6 +1,7 @@
 mod image_resize;
 mod drawing_utils;
 mod hud_overlay;
+mod telemetry_plot;
 
 use std::cmp::max;
 use std::fs;
@@ -11,7 +12,7 @@ use crate::data_fetcher::{CompleteDriverData, DriverTelemetryData};
 use image_resize::*;
 use drawing_utils::*;
 use hud_overlay::*;
-
+use telemetry_plot::*;
 
 const THICKNESS: i32 = 3;
 const PADDING: u32 = THICKNESS as u32 * 5;
@@ -20,6 +21,9 @@ const FRAME_TIME: u32 = 50;
 const TRACK_WIDTH: u32 = 512;
 const TRACK_HEIGHT: u32 = 512;
 const SIDEBAR_WIDTH: u32 = 256;
+const TELEMETRY_HEIGHT: u32 = 256;
+const TELEMETRY_PLOT_WIDTH: u32 = TRACK_WIDTH + SIDEBAR_WIDTH - 2 * PADDING;
+const TELEMETRY_PLOT_HEIGHT: u32 = TELEMETRY_HEIGHT - 2 * PADDING;
 
 const BACKGROUND_COLOR: Rgba<u8> = Rgba([15, 15, 15, 255]);
 const TRANSPARENT: Rgba<u8> = Rgba([255, 255, 255, 0]);
@@ -49,6 +53,16 @@ fn overlay_driver_frames(output_buffer: &mut RgbaImage, d1_buffer: &RgbaImage, d
     overlay(output_buffer, d2_buffer, 0, 0);
 }
 
+fn draw_telemetry_plot(d1_plot: &mut RgbaImage, d2_plot: &mut RgbaImage, d1_data: &CompleteDriverData, d2_data: &CompleteDriverData, d1_plot_data: &mut TelemetryPlotData, d2_plot_data: &mut TelemetryPlotData, d1_color: Rgba<u8>, d2_color: Rgba<u8>, current_frame: usize) {
+    draw_telemetry(d1_plot, d1_plot_data, d1_data, d1_color, TELEMETRY_PLOT_WIDTH, TELEMETRY_PLOT_HEIGHT, current_frame);
+    draw_telemetry(d2_plot, d2_plot_data, d2_data, d2_color, TELEMETRY_PLOT_WIDTH, TELEMETRY_PLOT_HEIGHT, current_frame);
+}
+
+fn overlay_telemetry(output_buffer: &mut RgbaImage, d1_plot: &RgbaImage, d2_plot: &RgbaImage) {
+    overlay(output_buffer, d1_plot, PADDING as i64, (TRACK_HEIGHT + PADDING) as i64);
+    overlay(output_buffer, d2_plot, PADDING as i64, (TRACK_HEIGHT + PADDING) as i64);
+}
+
 fn save_frame_to_gif<W>(encoder: &mut GifEncoder<W>, output_buffer: RgbaImage)
 where
     W: Write, 
@@ -69,6 +83,10 @@ pub fn generate_gif(mut complete_d1_data: CompleteDriverData, mut complete_d2_da
     let mut d1_buffer = RgbaImage::from_pixel(TRACK_WIDTH, TRACK_HEIGHT, TRANSPARENT);
     let mut d2_buffer = RgbaImage::from_pixel(TRACK_WIDTH, TRACK_HEIGHT, TRANSPARENT);
 
+    let (mut d1_plot_data, mut d2_plot_data) = TelemetryPlotData::new_pair(&complete_d1_data, &complete_d2_data);
+    let mut d1_plot = RgbaImage::from_pixel(TELEMETRY_PLOT_WIDTH, TELEMETRY_PLOT_HEIGHT, TRANSPARENT);
+    let mut d2_plot = RgbaImage::from_pixel(TELEMETRY_PLOT_WIDTH, TELEMETRY_PLOT_HEIGHT, TRANSPARENT);
+
     let regular_font = FontRef::try_from_slice(include_bytes!("../static/fonts/OpenSans-Regular.ttf")).expect("Unable to load font");
     let bold_font = FontRef::try_from_slice(include_bytes!("../static/fonts/OpenSans-Bold.ttf")).expect("Unable to load font");
 
@@ -80,11 +98,13 @@ pub fn generate_gif(mut complete_d1_data: CompleteDriverData, mut complete_d2_da
         println!("Frame {} / {}", i, no_frames - 1);
 
         draw_driver_frames(&mut d1_buffer, &mut d2_buffer, &complete_d1_data.telemetry, &complete_d2_data.telemetry, d1_draw_color, d2_draw_color, i);
+        draw_telemetry_plot(&mut d1_plot, &mut d2_plot, &complete_d1_data, &complete_d2_data, &mut d1_plot_data, &mut d2_plot_data, d1_draw_color, d2_draw_color, i);
 
         let hud = get_hud(&complete_d1_data, &complete_d2_data, i, &regular_font, &bold_font);
 
-        let mut combined_img = RgbaImage::from_pixel(TRACK_WIDTH + SIDEBAR_WIDTH, TRACK_HEIGHT, BACKGROUND_COLOR);
+        let mut combined_img = RgbaImage::from_pixel(TRACK_WIDTH + SIDEBAR_WIDTH, TRACK_HEIGHT + TELEMETRY_HEIGHT, BACKGROUND_COLOR);
         overlay_driver_frames(&mut combined_img, &d1_buffer, &d2_buffer);
+        overlay_telemetry(&mut combined_img, &d1_plot, &d2_plot);
         overlay(&mut combined_img, &hud, TRACK_WIDTH as i64, 0);
         
         save_frame_to_gif(&mut encoder, combined_img);
