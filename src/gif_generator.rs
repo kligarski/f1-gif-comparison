@@ -19,12 +19,12 @@ use hud_overlay::*;
 use telemetry_plot::*;
 use gif_consts::*;
 
-fn save_frame_to_gif<W>(encoder: &mut GifEncoder<W>, output_buffer: RgbaImage)
+fn save_frame_to_gif<W>(encoder: &mut GifEncoder<W>, output_buffer: RgbaImage, framerate: u32)
 where
     W: Write, 
 {
     let frame = Frame::from_parts(output_buffer, 0, 0, 
-        Delay::from_numer_denom_ms(FRAME_TIME, 1));
+        Delay::from_numer_denom_ms(1000, framerate));
 
     encoder.encode_frame(frame).expect("Can't encode frame");
 }
@@ -35,7 +35,7 @@ fn get_encoder(output_path: &str) -> GifEncoder<BufWriter<File>> {
     GifEncoder::new_with_speed(writer, 30)
 }
 
-pub fn generate_gif(mut complete_d1_data: CompleteDriverData, mut complete_d2_data: CompleteDriverData, output_path: &str) {  
+pub fn generate_gif(mut complete_d1_data: CompleteDriverData, mut complete_d2_data: CompleteDriverData, output_path: &str, framerate: u32) {  
     let mut encoder = get_encoder(output_path);
 
     let regular_font = FontRef::try_from_slice(
@@ -75,11 +75,11 @@ pub fn generate_gif(mut complete_d1_data: CompleteDriverData, mut complete_d2_da
 
         overlay(&mut combined_img, &telemetry_plot.get_telemetry_plot(), 
             TELEMETRY_POSITION_X, TELEMETRY_POSITION_Y);
-            
+
         overlay(&mut combined_img, &hud.get_hud(i), 
             HUD_POSITION_X, HUD_POSITION_Y);
         
-        save_frame_to_gif(&mut encoder, combined_img);
+        save_frame_to_gif(&mut encoder, combined_img, framerate);
     }
 
 }

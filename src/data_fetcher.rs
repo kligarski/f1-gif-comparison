@@ -72,10 +72,11 @@ fn read_and_parse_driver_data(driver_index: i32) -> Result<CompleteDriverData, S
     Ok(CompleteDriverData {telemetry: telemetry_data, lap: lap_data, driver: driver_data})
 }
 
-pub fn fetch(year: u32, country: &str, driver1: &str, driver2: &str, use_cached: bool) -> Result<(CompleteDriverData, CompleteDriverData), String> {
+pub fn fetch(framerate: u32, year: u32, country: &str, driver1: &str, driver2: &str, use_cached: bool) -> Result<(CompleteDriverData, CompleteDriverData), String> {
     if !use_cached {
         let status = Command::new("python")
             .arg("./f1_fast/fetch.py")
+            .arg(framerate.to_string())
             .arg(year.to_string())
             .arg(country)
             .arg(driver1)

@@ -30,20 +30,19 @@ DRIVER_DATA_ERROR = 3
 LAP_DATA_ERROR = 4
 TELEMETRY_DATA_ERROR = 5
 
-FREQUENCY = 20
-
 DRIVER_DATA_FILE = "driver{}_data.json"
 LAP_DATA_FILE = "lap{}_data.json"
 TELEMETRY_DATA_FILE = "telemetry{}_data.json"
 
 try:
-    # Format: python fetch.py <year> <country> <driver1> <driver2> 
-    year = int(sys.argv[1])
-    country = sys.argv[2]
-    driver1 = sys.argv[3]
-    driver2 = sys.argv[4]
+    # Format: python fetch.py <framerate> <year> <country> <driver1> <driver2> 
+    framerate = int(sys.argv[1])
+    year = int(sys.argv[2])
+    country = sys.argv[3]
+    driver1 = sys.argv[4]
+    driver2 = sys.argv[5]
 except:
-    print("Usage: python fetch.py <year> <country> <driver1> <driver2>")
+    print("Usage: python fetch.py <framerate> <year> <country> <driver1> <driver2>")
     exit(USAGE_ERROR)
 
 try: 
@@ -80,8 +79,8 @@ except:
     exit(LAP_DATA_ERROR)
     
 try:
-    telemetry1_data = session.laps.pick_driver(driver1).pick_fastest().get_telemetry(frequency=FREQUENCY)[TELEMETRY_STATS]
-    telemetry2_data = session.laps.pick_driver(driver2).pick_fastest().get_telemetry(frequency=FREQUENCY)[TELEMETRY_STATS]
+    telemetry1_data = session.laps.pick_driver(driver1).pick_fastest().get_telemetry(frequency=framerate)[TELEMETRY_STATS]
+    telemetry2_data = session.laps.pick_driver(driver2).pick_fastest().get_telemetry(frequency=framerate)[TELEMETRY_STATS]
 
     telemetry1_data.X = telemetry1_data.X.map(lambda x: int(x)) 
     telemetry1_data.Y = telemetry1_data.Y.map(lambda x: int(x)) 

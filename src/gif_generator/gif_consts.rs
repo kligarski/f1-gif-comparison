@@ -34,8 +34,6 @@ pub const TELEMETRY_POSITION_Y: i64 = (TRACK_HEIGHT + PADDING) as i64;
 pub const HUD_POSITION_X: i64 = TRACK_WIDTH as i64;
 pub const HUD_POSITION_Y: i64 = 0;
 
-pub const FRAME_TIME: u32 = 50;
-
 pub const BACKGROUND_COLOR: Rgba<u8> = Rgba([15, 15, 15, 255]);
 pub const TRANSPARENT: Rgba<u8> = Rgba([255, 255, 255, 0]);
 
