@@ -54,17 +54,17 @@ where
 }
 
 fn read_and_parse_driver_data(driver_index: i32) -> Result<CompleteDriverData, String> {
-    let lap_json = fs::read_to_string(format!("lap{}_data.json", driver_index))
+    let lap_json = fs::read_to_string(format!("data/lap{}_data.json", driver_index))
         .map_err(|_| String::from("Unable to read json file"))?;
     let lap_data: LapData = serde_json::from_str(&lap_json)
         .map_err(|_| String::from("Unable to parse json file"))?;
 
-    let driver_json = fs::read_to_string(format!("driver{}_data.json", driver_index))
+    let driver_json = fs::read_to_string(format!("data/driver{}_data.json", driver_index))
         .map_err(|_| String::from("Unable to read json file"))?;
     let driver_data: DriverData = serde_json::from_str(&driver_json)
         .map_err(|_| String::from("Unable to parse json file"))?;
 
-    let telemetry_json = fs::read_to_string(format!("telemetry{}_data.json", driver_index))
+    let telemetry_json = fs::read_to_string(format!("data/telemetry{}_data.json", driver_index))
         .map_err(|_| String::from("Unable to read json file"))?;
     let telemetry_data: Vec<DriverTelemetryData> = serde_json::from_str(&telemetry_json)
         .map_err(|_| String::from("Unable to parse json file"))?;

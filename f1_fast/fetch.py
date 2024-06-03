@@ -1,4 +1,8 @@
-import fastf1, sys
+import fastf1, sys, os
+
+def get_path(path):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    return path
 
 LAP_STATS = [
     "LapTime",
@@ -30,9 +34,9 @@ DRIVER_DATA_ERROR = 3
 LAP_DATA_ERROR = 4
 TELEMETRY_DATA_ERROR = 5
 
-DRIVER_DATA_FILE = "driver{}_data.json"
-LAP_DATA_FILE = "lap{}_data.json"
-TELEMETRY_DATA_FILE = "telemetry{}_data.json"
+DRIVER_DATA_FILE = "./data/driver{}_data.json"
+LAP_DATA_FILE = "./data/lap{}_data.json"
+TELEMETRY_DATA_FILE = "./data/telemetry{}_data.json"
 
 try:
     # Format: python fetch.py <framerate> <year> <country> <driver1> <driver2> 
@@ -55,11 +59,12 @@ except:
 try:
     driver1_data = session.get_driver(driver1)[DRIVER_STATS]
     driver2_data = session.get_driver(driver2)[DRIVER_STATS]
-
-    with open(DRIVER_DATA_FILE.format(1), "w") as file:
+    print(get_path(DRIVER_DATA_FILE.format(1)))
+    
+    with open(get_path(DRIVER_DATA_FILE.format(1)), "w") as file:
         driver1_data.to_json(file)
     
-    with open(DRIVER_DATA_FILE.format(2), "w") as file:
+    with open(get_path(DRIVER_DATA_FILE.format(2)), "w") as file:
         driver2_data.to_json(file)
 except:
     print("Unable to fetch or export driver data")
@@ -69,10 +74,10 @@ try:
     lap1_data = session.laps.pick_driver(driver1).pick_fastest()[LAP_STATS]
     lap2_data = session.laps.pick_driver(driver2).pick_fastest()[LAP_STATS]
 
-    with open(LAP_DATA_FILE.format(1), "w") as file:
+    with open(get_path(LAP_DATA_FILE.format(1)), "w") as file:
         lap1_data.to_json(file)
     
-    with open(LAP_DATA_FILE.format(2), "w") as file:
+    with open(get_path(LAP_DATA_FILE.format(2)), "w") as file:
         lap2_data.to_json(file)
 except:
     print("Unable to fetch or export lap data")
@@ -88,10 +93,10 @@ try:
     telemetry2_data.X = telemetry2_data.X.map(lambda x: int(x)) 
     telemetry2_data.Y = telemetry2_data.Y.map(lambda x: int(x)) 
 
-    with open(TELEMETRY_DATA_FILE.format(1), "w") as file:
+    with open(get_path(TELEMETRY_DATA_FILE.format(1)), "w") as file:
         telemetry1_data.to_json(file, orient="records")
     
-    with open(TELEMETRY_DATA_FILE.format(2), "w") as file:
+    with open(get_path(TELEMETRY_DATA_FILE.format(2)), "w") as file:
         telemetry2_data.to_json(file, orient="records")
 except:
     print("Unable to fetch or export telemetry data")
