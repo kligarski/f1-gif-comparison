@@ -1,36 +1,103 @@
-import fastf1, sys
+import fastf1, sys, os
 
-# LAP_STATS = [
-#     "Sector1Time", 
-#     "Sector2Time", 
-#     "Sector3Time", 
-#     "Sector1SessionTime", 
-#     "Sector2SessionTime", 
-#     "Sector3SessionTime"]
+def get_path(path):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    return path
 
-# Format: python fetch.py <year> <country?> <driver1> <driver2> 
-year = int(sys.argv[1])
-country = sys.argv[2]
-driver1 = sys.argv[3]
-driver2 = sys.argv[4]
+LAP_STATS = [
+    "LapTime",
+    "Sector1Time", 
+    "Sector2Time", 
+    "Sector3Time", 
+    "Sector1SessionTime", 
+    "Sector2SessionTime", 
+    "Sector3SessionTime"
+]
 
-session = fastf1.get_session(year, country, 'Q')
-session.load()
+DRIVER_STATS = [
+    "BroadcastName", 
+    "TeamName", 
+    "TeamColor"
+]
 
-driver1_lap = session.laps.pick_driver(driver1).pick_fastest()
-driver2_lap = session.laps.pick_driver(driver2).pick_fastest()
+TELEMETRY_STATS = [
+    "SessionTime", 
+    "X", 
+    "Y", 
+    "Speed", 
+    "RelativeDistance"
+]
 
-# driver1_lap_stats = driver1_lap[LAP_STATS]
-# driver2_lap_stats = driver2_lap[LAP_STATS]
+USAGE_ERROR = 1
+SESSION_LOAD_ERROR = 2
+DRIVER_DATA_ERROR = 3
+LAP_DATA_ERROR = 4
+TELEMETRY_DATA_ERROR = 5
 
-# driver1_stats = session.get_driver(driver1)
-# driver2_stats = session.get_driver(driver2)
+DRIVER_DATA_FILE = "./data/driver{}_data.json"
+LAP_DATA_FILE = "./data/lap{}_data.json"
+TELEMETRY_DATA_FILE = "./data/telemetry{}_data.json"
 
-driver1_telemetry = driver1_lap.get_telemetry(frequency=20)
-driver2_telemetry = driver2_lap.get_telemetry(frequency=20)
+try:
+    # Format: python fetch.py <framerate> <year> <country> <driver1> <driver2> 
+    framerate = int(sys.argv[1])
+    year = int(sys.argv[2])
+    country = sys.argv[3]
+    driver1 = sys.argv[4]
+    driver2 = sys.argv[5]
+except:
+    print("Usage: python fetch.py <framerate> <year> <country> <driver1> <driver2>")
+    exit(USAGE_ERROR)
 
-with open("driver1_telemetry.json", "w") as file:
-    driver1_telemetry[['X', 'Y']].rename(columns={"X": "x", "Y": "y"}).to_json(file, orient="records")
+try: 
+    session = fastf1.get_session(year, country, 'Q')
+    session.load()
+except:
+    print("Unable to fetch session data")
+    exit(SESSION_LOAD_ERROR)
 
-with open("driver2_telemetry.json", "w") as file:
-    driver2_telemetry[['X', 'Y']].rename(columns={"X": "x", "Y": "y"}).to_json(file, orient="records")
+try:
+    driver1_data = session.get_driver(driver1)[DRIVER_STATS]
+    driver2_data = session.get_driver(driver2)[DRIVER_STATS]
+    print(get_path(DRIVER_DATA_FILE.format(1)))
+    
+    with open(get_path(DRIVER_DATA_FILE.format(1)), "w") as file:
+        driver1_data.to_json(file)
+    
+    with open(get_path(DRIVER_DATA_FILE.format(2)), "w") as file:
+        driver2_data.to_json(file)
+except:
+    print("Unable to fetch or export driver data")
+    exit(DRIVER_DATA_ERROR)
+
+try:
+    lap1_data = session.laps.pick_driver(driver1).pick_fastest()[LAP_STATS]
+    lap2_data = session.laps.pick_driver(driver2).pick_fastest()[LAP_STATS]
+
+    with open(get_path(LAP_DATA_FILE.format(1)), "w") as file:
+        lap1_data.to_json(file)
+    
+    with open(get_path(LAP_DATA_FILE.format(2)), "w") as file:
+        lap2_data.to_json(file)
+except:
+    print("Unable to fetch or export lap data")
+    exit(LAP_DATA_ERROR)
+    
+try:
+    telemetry1_data = session.laps.pick_driver(driver1).pick_fastest().get_telemetry(frequency=framerate)[TELEMETRY_STATS]
+    telemetry2_data = session.laps.pick_driver(driver2).pick_fastest().get_telemetry(frequency=framerate)[TELEMETRY_STATS]
+
+    telemetry1_data.X = telemetry1_data.X.map(lambda x: int(x)) 
+    telemetry1_data.Y = telemetry1_data.Y.map(lambda x: int(x)) 
+
+    telemetry2_data.X = telemetry2_data.X.map(lambda x: int(x)) 
+    telemetry2_data.Y = telemetry2_data.Y.map(lambda x: int(x)) 
+
+    with open(get_path(TELEMETRY_DATA_FILE.format(1)), "w") as file:
+        telemetry1_data.to_json(file, orient="records")
+    
+    with open(get_path(TELEMETRY_DATA_FILE.format(2)), "w") as file:
+        telemetry2_data.to_json(file, orient="records")
+except:
+    print("Unable to fetch or export telemetry data")
+    exit(TELEMETRY_DATA_ERROR)
