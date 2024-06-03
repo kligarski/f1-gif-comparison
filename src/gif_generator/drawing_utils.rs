@@ -4,8 +4,6 @@ use imageproc::drawing::{BresenhamLineIter, draw_filled_circle_mut};
 use image::{Rgba, RgbaImage};
 use crate::data_fetcher::DriverData;
 
-use super::BACKGROUND_COLOR;
-
 // Adapted from imageproc::drawing::draw_line_segment_mut
 fn draw_thick_line_segment_mut(image: &mut RgbaImage, start: (f32, f32), end: (f32, f32), color: Rgba<u8>, radius: i32)
 {
@@ -41,56 +39,21 @@ fn get_complementary_color(color: [u8; 4]) -> [u8; 4] {
     [c_r, c_g, c_b, a]
 }
 
-// reversed alpha-blending to preserve driver colors with transparency
-pub fn compute_foreground_rgba(result: [u8; 3], background: [u8; 3]) -> Result<[u8; 4], String> {
-    let (r_r, g_r, b_r) = (result[0] as f32, result[1] as f32, result[2] as f32);
-    let (r_b, g_b, b_b) = (background[0] as f32, background[1] as f32, background[2] as f32);
 
-    let mut alpha_r = 0.0;
-    let mut alpha_g = 0.0;
-    let mut alpha_b = 0.0;
-
-    if r_r != r_b {
-        alpha_r = (r_r - r_b) / (255.0 - r_b);
-    }
-    if g_r != g_b {
-        alpha_g = (g_r - g_b) / (255.0 - g_b);
-    }
-    if b_r != b_b {
-        alpha_b = (b_r - b_b) / (255.0 - b_b);
-    }
-
-    let alpha = alpha_r.max(alpha_g).max(alpha_b);
-
-    if alpha <= 0.0 {
-        return Err(String::from("Alpha value is out of bounds, indicating no valid foreground color"));
-    }
-
-    let r_f = ((r_r - (1.0 - alpha) * r_b) / alpha).clamp(0.0, 255.0);
-    let g_f = ((g_r - (1.0 - alpha) * g_b) / alpha).clamp(0.0, 255.0);
-    let b_f = ((b_r - (1.0 - alpha) * b_b) / alpha).clamp(0.0, 255.0);
-
-    Ok([r_f as u8, g_f as u8, b_f as u8, (alpha * 256.0) as u8])
-}
-
-// Returns driver colors coresponding to team's colors in Rgba<u8>
+// Returns driver colors coresponding to team's colors in Rgba<u8> with added transparency.
 // If both drivers are from the same team, the second driver is assigned 
-// a complementary color and also changes it in the DriverData struct
+// a complementary color or blue (no complementary color to white)
 pub fn get_driver_colors(driver1: &DriverData, driver2: &mut DriverData) -> (Rgba<u8>, Rgba<u8>) {
-    let d1_color = driver1.team_color.clone();
+    let mut d1_color = driver1.team_color.clone();
     let mut d2_color = driver2.team_color.clone();
 
     if d1_color == d2_color {
-        d2_color = get_complementary_color(d2_color);
+        d2_color = if d2_color == [255, 255, 255, 255] {[102, 153, 255, 255]} else {get_complementary_color(d2_color)};
         driver2.team_color = d2_color.clone();
     }
 
-    let d1_3 = [d1_color[0], d1_color[1], d1_color[2]];
-    let d2_3 = [d2_color[0], d2_color[1], d2_color[2]];
-    let bg_3 = [BACKGROUND_COLOR[0], BACKGROUND_COLOR[1], BACKGROUND_COLOR[2]];
+    d1_color[3] = 180;
+    d2_color[3] = 180;
 
-    let d1_calc = compute_foreground_rgba(d1_3, bg_3).unwrap_or(d1_color);
-    let d2_calc = compute_foreground_rgba(d2_3, bg_3).unwrap_or(d2_color);
-
-    return (Rgba::from(d1_calc), Rgba::from(d2_calc));
+    return (Rgba::from(d1_color), Rgba::from(d2_color));
 }   

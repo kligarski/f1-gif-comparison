@@ -24,6 +24,7 @@ const SIDEBAR_WIDTH: u32 = 256;
 const TELEMETRY_HEIGHT: u32 = 256;
 const TELEMETRY_PLOT_WIDTH: u32 = TRACK_WIDTH + SIDEBAR_WIDTH - 2 * PADDING;
 const TELEMETRY_PLOT_HEIGHT: u32 = TELEMETRY_HEIGHT - 2 * PADDING;
+const TELEMETRY_PLOT_AXES_LABELS_MARGIN: u32 = 32;
 
 const BACKGROUND_COLOR: Rgba<u8> = Rgba([15, 15, 15, 255]);
 const TRANSPARENT: Rgba<u8> = Rgba([255, 255, 255, 0]);
@@ -83,12 +84,12 @@ pub fn generate_gif(mut complete_d1_data: CompleteDriverData, mut complete_d2_da
     let mut d1_buffer = RgbaImage::from_pixel(TRACK_WIDTH, TRACK_HEIGHT, TRANSPARENT);
     let mut d2_buffer = RgbaImage::from_pixel(TRACK_WIDTH, TRACK_HEIGHT, TRANSPARENT);
 
-    let (mut d1_plot_data, mut d2_plot_data) = TelemetryPlotData::new_pair(&complete_d1_data, &complete_d2_data);
-    let mut d1_plot = RgbaImage::from_pixel(TELEMETRY_PLOT_WIDTH, TELEMETRY_PLOT_HEIGHT, TRANSPARENT);
-    let mut d2_plot = RgbaImage::from_pixel(TELEMETRY_PLOT_WIDTH, TELEMETRY_PLOT_HEIGHT, TRANSPARENT);
-
     let regular_font = FontRef::try_from_slice(include_bytes!("../static/fonts/OpenSans-Regular.ttf")).expect("Unable to load font");
     let bold_font = FontRef::try_from_slice(include_bytes!("../static/fonts/OpenSans-Bold.ttf")).expect("Unable to load font");
+
+    let (mut d1_plot_data, mut d2_plot_data) = TelemetryPlotData::new_pair(&complete_d1_data, &complete_d2_data);
+    let mut d1_plot = new_telemetry_buffer(&regular_font);
+    let mut d2_plot = new_telemetry_buffer(&regular_font);
 
     resize_data_to_dims(&mut complete_d1_data.telemetry, &mut complete_d2_data.telemetry, TRACK_WIDTH - 2 * PADDING, TRACK_HEIGHT - 2 * PADDING);
     center_data_to_dims(&mut complete_d1_data.telemetry, &mut complete_d2_data.telemetry, TRACK_WIDTH, TRACK_HEIGHT);
