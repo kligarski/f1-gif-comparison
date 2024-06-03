@@ -39,7 +39,6 @@ fn get_complementary_color(color: [u8; 4]) -> [u8; 4] {
     [c_r, c_g, c_b, a]
 }
 
-
 // Returns driver colors coresponding to team's colors in Rgba<u8> with added transparency.
 // If both drivers are from the same team, the second driver is assigned 
 // a complementary color or blue (no complementary color to white)

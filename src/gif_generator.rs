@@ -59,6 +59,8 @@ pub fn generate_gif(mut complete_d1_data: CompleteDriverData, mut complete_d2_da
         TelemetryPlot::new(&complete_d1_data, &complete_d2_data, 
             d1_draw_color, d2_draw_color, &regular_font);
 
+    let hud = HUD::new(&complete_d1_data, &complete_d2_data, &regular_font, &bold_font);
+
     let no_frames = max(complete_d1_data.telemetry.len(), complete_d2_data.telemetry.len()) + 20;
     for i in 0..no_frames {
         println!("Frame {} / {}", i, no_frames - 1);
@@ -66,16 +68,16 @@ pub fn generate_gif(mut complete_d1_data: CompleteDriverData, mut complete_d2_da
         track_map.draw_next_frame();
         telemetry_plot.draw_next_frame();
 
-        let hud = get_hud(
-            &complete_d1_data, &complete_d2_data, i, &regular_font, &bold_font);
-
         let mut combined_img = 
             RgbaImage::from_pixel(GIF_WIDTH, GIF_HEIGHT, BACKGROUND_COLOR);
 
         overlay(&mut combined_img, &track_map.get_track_map(), 0, 0);
+
         overlay(&mut combined_img, &telemetry_plot.get_telemetry_plot(), 
             TELEMETRY_POSITION_X, TELEMETRY_POSITION_Y);
-        overlay(&mut combined_img, &hud, HUD_POSITION_X, HUD_POSITION_Y);
+            
+        overlay(&mut combined_img, &hud.get_hud(i), 
+            HUD_POSITION_X, HUD_POSITION_Y);
         
         save_frame_to_gif(&mut encoder, combined_img);
     }
