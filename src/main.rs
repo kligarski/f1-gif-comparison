@@ -6,10 +6,11 @@ use std::process;
 mod data_fetcher;
 mod gif_generator;
 
-const FRAMERATE: u32 = 20;
-
 fn usage_error(args: &Vec<String>) {
-    eprintln!("Usage: {} <framerate> <year> <country> <driver1> <driver2>", args[0]);
+    eprintln!(
+        "Usage: {} <framerate> <year> <country> <driver1> <driver2>",
+        args[0]
+    );
     eprintln!("Please use 3-letter abbrievation of the driver, e.g. HAM, VER, ...");
     process::exit(1);
 }
@@ -27,10 +28,18 @@ fn main() {
         usage_error(&args);
     }
 
-    match fetch(framerate.unwrap(), year.unwrap(), 
-        args[3].as_str(), args[4].as_str(), args[5].as_str(), false) {
-        Ok((d1, d2)) 
-            => generate_gif(d1, d2, "animation.gif", FRAMERATE),
+    let framerate = framerate.unwrap();
+    let year = year.unwrap();
+
+    match fetch(
+        framerate,
+        year,
+        args[3].as_str(),
+        args[4].as_str(),
+        args[5].as_str(),
+        false,
+    ) {
+        Ok((d1, d2)) => generate_gif(d1, d2, "animation.gif", framerate),
 
         Err(e) => {
             eprintln!("Unable to create a gif. Error: {}", e);
